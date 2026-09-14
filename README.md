@@ -8,6 +8,44 @@ compare.
 It does **not** log credentials, cookie values, authorization headers, or full
 page bodies. Run it only against a gateway you are authorized to test.
 
+## Simplest option: edit one file and run it
+
+Open `quick_debug.py` and edit only the CONFIG section near the top:
+
+```python
+CITRIX_URL = "https://citrix.your-company.com/logon/LogonPoint/tmindex.html"
+EPA_CERTIFICATE = ""  # Or: r"C:\Certificates\device.pfx"
+EPA_PRIVATE_KEY = ""  # Only when a separate PEM key exists
+CERTIFICATE_HAS_PASSWORD = False
+ATTEMPTS = 5
+```
+
+Do not put an account password, 2FA code, or certificate password in the file.
+If the PFX/P12 is protected, set `CERTIFICATE_HAS_PASSWORD = True`; the script
+will prompt without displaying or saving the password.
+
+After completing the installation below, run:
+
+```bash
+python quick_debug.py
+```
+
+It prints the result of DNS, TCP, TLS, and HTTP checks, then reports which
+pre-login requirements it can see:
+
+- Username and password
+- 2FA, MFA, OTP, Duo, RSA SecurID, or authenticator
+- SAML/OAuth/SSO and common identity-provider redirects
+- YubiKey, WebAuthn, FIDO, or another security key
+- Citrix EPA/device-posture resources
+- A client/device certificate
+
+These are conservative hints from the public pre-login flow. Citrix nFactor may
+reveal later requirements only after the first factor succeeds, so
+`not_observed` means “not visible yet,” not “definitely unnecessary.” The script
+does not submit account credentials or 2FA codes and therefore cannot lock the
+account or approve/bypass an authentication challenge.
+
 ## Quick start
 
 Python 3.10 or newer is required.

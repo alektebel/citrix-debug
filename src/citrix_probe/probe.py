@@ -23,6 +23,8 @@ from cryptography import x509
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.serialization import pkcs12
 
+from .auth_detection import detect_auth_requirements
+
 
 DEFAULT_PATH = "/logon/LogonPoint/tmindex.html"
 REDACTED_HEADERS = {"authorization", "cookie", "proxy-authorization", "set-cookie"}
@@ -373,6 +375,11 @@ def probe_http(
             "body_sha256": hashlib.sha256(body).hexdigest(),
             "expected_text": expected_text,
             "expected_text_found": marker_found,
+            "auth_requirements": detect_auth_requirements(
+                decoded,
+                [url, final_url]
+                + [hop["to"] for hop in redirect_handler.hops],
+            ),
         }
         error = None if ok else "HTTP response did not meet the success criteria"
         return Stage(
@@ -384,6 +391,7 @@ def probe_http(
         )
     except urllib.error.HTTPError as exc:
         body = exc.read(max_body_bytes)
+        decoded = body.decode("utf-8", errors="replace")
         return Stage(
             ok=False,
             elapsed_ms=round((time.perf_counter() - start) * 1000, 2),
@@ -395,6 +403,11 @@ def probe_http(
                 "response_headers": safe_headers(exc.headers),
                 "body_bytes_read": len(body),
                 "body_sha256": hashlib.sha256(body).hexdigest(),
+                "auth_requirements": detect_auth_requirements(
+                    decoded,
+                    [url, exc.url]
+                    + [hop["to"] for hop in redirect_handler.hops],
+                ),
             },
             error_type=type(exc).__name__,
             error=str(exc),
