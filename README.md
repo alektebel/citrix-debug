@@ -46,6 +46,75 @@ reveal later requirements only after the first factor succeeds, so
 does not submit account credentials or 2FA codes and therefore cannot lock the
 account or approve/bypass an authentication challenge.
 
+## Windows PowerShell toolkit (no PFX required)
+
+The scripts in `windows/` can use a certificate whose private key is already in
+the Windows Certificate Store. They do not export the private key.
+
+A certificate **thumbprint** is its hexadecimal identifier, for example
+`A1B2C3D4...`. It is not a password, certificate body, or private key.
+
+### Simplest PowerShell option
+
+Open `windows\Run-Me.ps1` in Notepad and change:
+
+```powershell
+$CitrixUrl = "https://YOUR-HOST/logon/LogonPoint/tmindex.html"
+$MaquinaCer = ".\maquina.cer"
+```
+
+Then right-click `Run-Me.ps1` and choose **Run with PowerShell**, or execute:
+
+```powershell
+powershell.exe -NoProfile -File .\windows\Run-Me.ps1
+```
+
+If `maquina.cer` is not beside the repository, put its complete path in
+`$MaquinaCer`. If you do not have the file, set `$MaquinaCer = ""`; DNS, TCP,
+HTTPS, and visible authentication tests will still run.
+
+### Easiest test when you have `maquina.cer`
+
+Open PowerShell in the repository and run:
+
+```powershell
+powershell.exe -NoProfile -File .\windows\Test-CitrixConnection.ps1 `
+  -Url "https://YOUR-HOST/logon/LogonPoint/tmindex.html" `
+  -CerFile ".\maquina.cer" `
+  -Attempts 5
+```
+
+The script reads the thumbprint from `maquina.cer`, searches both the Current
+User and Local Machine Personal stores, verifies that the installed match has a
+private key, and then asks Windows `curl.exe`/Schannel to use it. No PFX or key
+file is needed when the matching private key is installed in Windows.
+
+### Find candidate certificates
+
+```powershell
+powershell.exe -NoProfile -File .\windows\Get-CitrixCertificates.ps1
+```
+
+Check whether `maquina.cer` matches an installed certificate:
+
+```powershell
+powershell.exe -NoProfile -File .\windows\Get-CitrixCertificates.ps1 `
+  -CerFile ".\maquina.cer"
+```
+
+### Test only DNS, TCP, and proxy configuration
+
+```powershell
+powershell.exe -NoProfile -File .\windows\Test-CitrixNetwork.ps1 `
+  -Url "https://YOUR-HOST/logon/LogonPoint/tmindex.html"
+```
+
+`Test-CitrixConnection.ps1` records safe JSONL evidence and reports visible
+password, MFA/OTP, SSO, YubiKey/security-key, EPA/device-posture, and certificate
+requirements. It never submits login credentials. If no installed certificate
+with `HasPrivateKey = True` matches `maquina.cer`, IT must enroll or reissue the
+device certificate; importing a public `.cer` cannot reconstruct its private key.
+
 ## Quick start
 
 Python 3.10 or newer is required.
