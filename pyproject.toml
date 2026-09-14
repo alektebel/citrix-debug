@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "citrix-connection-probe"
+version = "0.1.0"
+description = "Evidence-first diagnostics for intermittent Citrix logon connections"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "PwC" }]
+dependencies = ["cryptography>=42"]
+
+[project.scripts]
+citrix-probe = "citrix_probe.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
